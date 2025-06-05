@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>متابعة حالة المريض</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background-image: url('https://i.ibb.co/fzffWJvk/Picture1.png');
+      background-size: cover;
+      background-position: center;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .logo-top {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .logo-top img {
+      width: 280px;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.92);
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.2);
+      width: 90%;
+      max-width: 700px;
+      text-align: center;
+    }
+    input {
+      padding: 10px;
+      margin: 10px auto;
+      width: 90%;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      display: block;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #1e90ff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+    th, td {
+      padding: 10px;
+      text-align: center;
+    }
+    #result {
+      margin-top: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="logo-top">
+    <img src="https://i.ibb.co/mkcbtjN/clinics-logo.png" alt="clinics-logo">
+  </div>
+
+  <div class="container">
+    <h2>استعلام عن حالة المريض</h2>
+    <input type="text" id="name" placeholder="الاسم الكامل للمريض">
+    <input type="text" id="code" placeholder="كود المريض">
+    <button onclick="searchPatient()">عرض الحالة</button>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const patientData = {
+      "MG1024": {
+        name: "محمد جمال عبد العزيز",
+        diagnosis: "اكتئاب حاد",
+        sessions: [
+          { name: "جلسة تقييم أولية", date: "12 مايو 2025", report: "تم تسجيل أعراض اكتئاب واضحة" },
+          { name: "جلسة دعم نفسي فردية", date: "14 مايو 2025", report: "تجاوب جيد، حالة مزاجية منخفضة" },
+          { name: "جلسة علاج معرفي سلوكي", date: "16 مايو 2025", report: "استجابة متوسطة، تحديات في النوم" },
+          { name: "جلسة متابعة واستقرار", date: "3 يونيو 2025", report: "تحسّن ملحوظ – الحالة شبه مستقرة" }
+        ]
+      }
+    };
+
+    function generateNewCode() {
+      return 'MG' + Math.floor(1000 + Math.random() * 9000);
+    }
+
+    function searchPatient() {
+      const nameInput = document.getElementById('name').value.trim();
+      const codeInput = document.getElementById('code').value.trim().toUpperCase();
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = "";
+
+      const patient = patientData[codeInput];
+
+      if (patient && patient.name === nameInput) {
+        const newCode = generateNewCode();
+
+        resultDiv.innerHTML = `
+          <h3>الاسم: ${patient.name}</h3>
+          <p><strong>التشخيص:</strong> ${patient.diagnosis}</p>
+          <p><strong>عدد الجلسات:</strong> ${patient.sessions.length}</p>
+          <h4>تفاصيل الجلسات:</h4>
+          <table>
+            <tr>
+              <th>رقم</th>
+              <th>اسم الجلسة</th>
+              <th>التاريخ</th>
+              <th>تقرير الطبيب</th>
+            </tr>
+            ${patient.sessions.map((session, index) => `
+              <tr>
+                <td>${index + 1}</td>
+                <td>${session.name}</td>
+                <td>${session.date}</td>
+                <td>${session.report}</td>
+              </tr>
+            `).join('')}
+          </table>
+        `;
+
+        // إرسال البيانات إلى Google Sheets
+        fetch('https://script.google.com/macros/s/AKfycbywD0C7NSyAoxLgsUlKTFFF6yJbmVU_NbfgWnYat7PCO6i0D2XP1XEk_BC_IimkQy64/exec', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: nameInput,
+            oldCode: codeInput,
+            newCode: newCode
+          }),
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        delete patientData[codeInput];
+      } else {
+        resultDiv.innerHTML = `<p style="color:red;">لا يوجد مريض بهذا الاسم أو الكود أو تم استخدام الكود مسبقًا.</p>`;
+      }
+    }
+  </script>
+
+</body>
+</html>

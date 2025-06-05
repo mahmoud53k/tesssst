@@ -2,72 +2,113 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>متابعة حالة المريض</title>
   <style>
     * {
       box-sizing: border-box;
+    }
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
     }
     body {
       font-family: Arial, sans-serif;
       background-image: url('https://i.ibb.co/fzffWJvk/Picture1.png');
       background-size: cover;
       background-position: center;
-      margin: 0;
-      padding: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
+      padding: 20px;
     }
     .logo-top {
-      margin-bottom: 20px;
+      margin: 40px auto 0;
       text-align: center;
     }
     .logo-top img {
-      width: 280px;
+      width: 300px;
+      max-width: 100%;
     }
     .container {
       background: rgba(255, 255, 255, 0.92);
-      padding: 30px;
+      padding: 30px 20px;
       border-radius: 16px;
       box-shadow: 0 0 20px rgba(0,0,0,0.2);
       width: 90%;
-      max-width: 700px;
+      max-width: 500px;
       text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0 auto;
     }
     input {
       padding: 10px;
-      margin: 10px auto;
-      width: 90%;
+      margin: 10px 0;
+      width: 100%;
+      max-width: 400px;
       border-radius: 6px;
       border: 1px solid #ccc;
-      display: block;
+      font-size: 1rem;
     }
     button {
-      padding: 10px 20px;
-      background-color: #1e90ff;
+      padding: 0.75rem;
+      font-size: 1rem;
+      background: url('https://i.ibb.co/RT8w1dLR/Lavison-Gradient-Bckgrnd.jpg');
+      background-size: cover;
       color: white;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
+      width: 100%;
+      max-width: 300px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      overflow: hidden;
       margin-top: 10px;
     }
-    table {
-      width: 100%;
-      margin-top: 20px;
-      border-collapse: collapse;
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
-    table, th, td {
-      border: 1px solid #ccc;
+    button:active {
+      transform: scale(0.95);
     }
-    th, td {
-      padding: 10px;
-      text-align: center;
+    button:active::after {
+      content: '';
+      position: absolute;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 50%;
+      left: 50%;
+      top: 50%;
+      width: 200%;
+      height: 200%;
+      transform: translate(-50%, -50%) scale(1);
+      animation: ripple 0.6s linear;
+      pointer-events: none;
     }
     #result {
       margin-top: 20px;
       text-align: center;
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+    @media (max-width: 600px) {
+      body {
+        padding: 10px;
+      }
+      .container {
+        padding: 20px 15px;
+      }
+      .logo-top img {
+        width: 160px;
+      }
+      button {
+        font-size: 1rem;
+      }
     }
   </style>
 </head>
@@ -79,7 +120,6 @@
 
   <div class="container">
     <h2>استعلام عن حالة المريض</h2>
-    <input type="text" id="name" placeholder="الاسم الكامل للمريض">
     <input type="text" id="code" placeholder="كود المريض">
     <button onclick="searchPatient()">عرض الحالة</button>
 
@@ -87,73 +127,37 @@
   </div>
 
   <script>
-    const patientData = {
-      "MG1024": {
-        name: "محمد جمال عبد العزيز",
-        diagnosis: "اكتئاب حاد",
-        sessions: [
-          { name: "جلسة تقييم أولية", date: "12 مايو 2025", report: "تم تسجيل أعراض اكتئاب واضحة" },
-          { name: "جلسة دعم نفسي فردية", date: "14 مايو 2025", report: "تجاوب جيد، حالة مزاجية منخفضة" },
-          { name: "جلسة علاج معرفي سلوكي", date: "16 مايو 2025", report: "استجابة متوسطة، تحديات في النوم" },
-          { name: "جلسة متابعة واستقرار", date: "3 يونيو 2025", report: "تحسّن ملحوظ – الحالة شبه مستقرة" }
-        ]
-      }
-    };
-
-    function generateNewCode() {
-      return 'MG' + Math.floor(1000 + Math.random() * 9000);
+    function encodeBase64(str) {
+      return btoa(unescape(encodeURIComponent(str)));
     }
 
-    function searchPatient() {
-      const nameInput = document.getElementById('name').value.trim();
-      const codeInput = document.getElementById('code').value.trim().toUpperCase();
+    async function searchPatient() {
+      const codeInput = document.getElementById('code').value.trim();
       const resultDiv = document.getElementById('result');
-      resultDiv.innerHTML = "";
+      resultDiv.innerHTML = "جاري التحميل...";
 
-      const patient = patientData[codeInput];
+      try {
+        const encodedCode = encodeBase64(codeInput);
 
-      if (patient && patient.name === nameInput) {
-        const newCode = generateNewCode();
+        const [nameResponse, reportResponse] = await Promise.all([
+          fetch(`https://script.google.com/macros/s/AKfycbzjNPODeKbb-6sqdpmoUVANUJpx-oINQh2-jDuLWriScfJTyi6kXCdVki1D-hVKWXTcyw/exec?code=${encodedCode}`),
+          fetch(`https://script.google.com/macros/s/AKfycbzONscoKjAbJssyBOtbBbQMnP7YOzPnbrx7DtTtDTktzrMKzoWkud7Awty3h6qKQ6nv/exec?code=${encodedCode}`)
+        ]);
 
-        resultDiv.innerHTML = `
-          <h3>الاسم: ${patient.name}</h3>
-          <p><strong>التشخيص:</strong> ${patient.diagnosis}</p>
-          <p><strong>عدد الجلسات:</strong> ${patient.sessions.length}</p>
-          <h4>تفاصيل الجلسات:</h4>
-          <table>
-            <tr>
-              <th>رقم</th>
-              <th>اسم الجلسة</th>
-              <th>التاريخ</th>
-              <th>تقرير الطبيب</th>
-            </tr>
-            ${patient.sessions.map((session, index) => `
-              <tr>
-                <td>${index + 1}</td>
-                <td>${session.name}</td>
-                <td>${session.date}</td>
-                <td>${session.report}</td>
-              </tr>
-            `).join('')}
-          </table>
-        `;
+        const nameData = await nameResponse.json();
+        const reportData = await reportResponse.json();
 
-        // إرسال البيانات إلى Google Sheets
-        fetch('https://script.google.com/macros/s/AKfycbywD0C7NSyAoxLgsUlKTFFF6yJbmVU_NbfgWnYat7PCO6i0D2XP1XEk_BC_IimkQy64/exec', {
-          method: 'POST',
-          body: JSON.stringify({
-            name: nameInput,
-            oldCode: codeInput,
-            newCode: newCode
-          }),
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-
-        delete patientData[codeInput];
-      } else {
-        resultDiv.innerHTML = `<p style="color:red;">لا يوجد مريض بهذا الاسم أو الكود أو تم استخدام الكود مسبقًا.</p>`;
+        if (nameData.success && reportData.success) {
+          resultDiv.innerHTML = `
+            <p><strong>الاسم:</strong> ${nameData.name}</p>
+            <p><strong>تقرير الحالة:</strong> ${reportData.report}</p>
+          `;
+        } else {
+          resultDiv.innerHTML = `<p style="color:red;">لم يتم العثور على البيانات.</p>`;
+        }
+      } catch (error) {
+        console.error(error);
+        resultDiv.innerHTML = `<p style="color:red;">حدث خطأ أثناء الاتصال بالخادم.</p>`;
       }
     }
   </script>
